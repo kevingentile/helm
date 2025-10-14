@@ -893,8 +893,9 @@ func batchPerform(infos ResourceList, fn func(*resource.Info) error, errs chan<-
 var createMutex sync.Mutex
 
 func createResource(info *resource.Info) error {
-	return retry.RetryOnConflict(
-		retry.DefaultRetry,
+	return retry.OnError(
+		retry.DefaultBackoff,
+		func(err error) bool { return apierrors.IsConflict(err) || apierrors.IsInternalError(err) },
 		func() error {
 			createMutex.Lock()
 			defer createMutex.Unlock()
